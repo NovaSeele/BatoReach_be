@@ -1,8 +1,9 @@
 # router.py
 import os, shutil
-from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
+
 from schemas.user import User, UserInDB, Token, UserCreate
 from models.user import authenticate_user, get_current_user, get_user_collection
 from dependency.user import get_password_hash, create_access_token
