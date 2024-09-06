@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, List
 from fastapi import UploadFile
-
+from schemas.project import ProjectInDB
 
 class Token(BaseModel):
     access_token: str
@@ -34,5 +34,6 @@ class UserCreate(BaseModel):
 class UserInDB(User):
     password: str
     hashed_password: str
-    # Store avatar as file path (str) or binary data (bytes)
     avatar: Optional[Union[str, bytes]] = None
+    number_of_projects: Optional[int] = int
+    projects: Optional[List[ProjectInDB]] = []

@@ -1,17 +1,23 @@
-# router.py
 import os, shutil
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
+from typing import List
 
 from schemas.user import User, UserInDB, Token, UserCreate
+from schemas.project import ProjectInDB
+
 from models.user import authenticate_user, get_current_user, get_user_collection
+from models.project import get_project_collection
+
 from dependency.user import get_password_hash, create_access_token
 
 router = APIRouter()
 
 UPLOAD_DIR = "public/avatars/"
 
+
+# Register a new user
 @router.post("/register", response_model=UserCreate)
 async def register_user(user: UserCreate):
     user_collection = await get_user_collection()
@@ -32,7 +38,7 @@ async def register_user(user: UserCreate):
         return user
     raise HTTPException(status_code=400, detail="Registration failed")
 
-
+# Upload an avatar for the current user
 @router.post("/upload-avatar", response_model=UserCreate)
 async def upload_avatar(avatar: UploadFile = File(...), current_user: UserCreate = Depends(get_current_user)):
     user_collection = await get_user_collection()
@@ -58,7 +64,7 @@ async def upload_avatar(avatar: UploadFile = File(...), current_user: UserCreate
     
     return updated_user
 
-
+# Login and get an access token
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password)
@@ -71,8 +77,55 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-
+# Get the current user
 @router.get("/users/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+# Get all the project and the project count that has owner_name as the current user (small route for update project info)
+@router.get("/projects", response_model=List[ProjectInDB])
+async def get_user_projects(current_user: UserInDB = Depends(get_current_user)):
+    project_collection = await get_project_collection()
+    projects = await project_collection.find({"owner_name": current_user.username}).to_list(length=100)
+    return projects
+
+@router.get("/projects/count", response_model=int)
+async def get_user_project_count(current_user: UserInDB = Depends(get_current_user)):
+    project_collection = await get_project_collection()
+    project_count = await project_collection.count_documents({"owner_name": current_user.username})
+    return project_count
+
+
+# Update the user's project information using small route before
+@router.put("/user/update_project", response_model=UserInDB)
+async def update_user_project_info(current_user: UserInDB = Depends(get_current_user)):
+    #get collection 
+    project_collection = await get_project_collection()
+    user_collection = await get_user_collection()
+    
+    #get project count
+    project_count = await project_collection.count_documents({"owner_name": current_user.username})
+    #get projects
+    projects = await project_collection.find({"owner_name": current_user.username}).to_list(length=100)
+    
+    #update data
+    updated_data = {
+        "number_of_projects": project_count,
+        "projects": projects
+    }
+    
+    # Update the user's information in the database
+    await user_collection.update_one(
+        {"username": current_user.username}, 
+        {"$set": updated_data}
+    )
+
+    # Return the updated user info
+    updated_user = await user_collection.find_one({"username": current_user.username})
+    
+    return UserInDB(**updated_user)
+
+
+
 
