@@ -5,6 +5,8 @@ cách chạy BE
 
 cd backend
 
+pip install -r requirements.txt trước
+
 python main.py
 
 Check cmd lấy đường dẫn
