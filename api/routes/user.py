@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
 
-from schemas.user import User, UserInDB, Token, UserCreate
+from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, UserChangePassword
 from schemas.project import ProjectInDB
 
 from models.user import authenticate_user, get_current_user, get_user_collection
@@ -38,9 +38,10 @@ async def register_user(user: UserCreate):
         return user
     raise HTTPException(status_code=400, detail="Registration failed")
 
-# Upload an avatar for the current user
-@router.post("/upload-avatar", response_model=UserCreate)
-async def upload_avatar(avatar: UploadFile = File(...), current_user: UserCreate = Depends(get_current_user)):
+
+# Upload an avatar for the current user ( can also use this route to update the avatar)
+@router.post("/upload-avatar", response_model=UserUpdateAvatar)
+async def upload_avatar(avatar: UploadFile = File(...), current_user: UserInDB = Depends(get_current_user)):
     user_collection = await get_user_collection()
 
     # Ensure the uploads directory exists
@@ -63,6 +64,7 @@ async def upload_avatar(avatar: UploadFile = File(...), current_user: UserCreate
     updated_user = await user_collection.find_one({"username": current_user.username})
     
     return updated_user
+
 
 # Login and get an access token
 @router.post("/token", response_model=Token)
@@ -115,17 +117,52 @@ async def update_user_project_info(current_user: UserInDB = Depends(get_current_
         "projects": projects
     }
     
-    # Update the user's information in the database
+    # update the user's information in the database
     await user_collection.update_one(
         {"username": current_user.username}, 
         {"$set": updated_data}
     )
 
-    # Return the updated user info
+    # return the updated user info
     updated_user = await user_collection.find_one({"username": current_user.username})
     
-    return UserInDB(**updated_user)
+    return updated_user
 
 
+# Change the user's password
+@router.put("/user/change_password", response_model=UserInDB)
+async def change_user_password(user: UserChangePassword, current_user: UserInDB = Depends(get_current_user)):
+    user_collection = await get_user_collection()
+    
+    # If new password is the same as the old password
+    if user.old_password == user.new_password:
+        raise HTTPException(
+            status_code=400, detail="New password cannot be the same as the old password")
+    
+    # Check if the old password is correct
+    if not user.old_password == current_user.password:
+        raise HTTPException(
+            status_code=400, detail="Old password is incorrect")
+    
+    # Hash the new password
+    new_password_hashed = get_password_hash(user.new_password)
+    
+    #Update both new password and hashed password
+    await user_collection.update_one(
+        {"username": current_user.username},
+        {"$set": {"password": user.new_password, "hashed_password": new_password_hashed}}
+    )
+    
+    # Update the user's password in the database
+    await user_collection.update_one(
+        {"username": current_user.username}, 
+        {"$set": {"password": user.new_password, "hashed_password": new_password_hashed}}
+    )
+    
+    # Fetch updated user details
+    updated_user = await user_collection.find_one({"username": current_user.username})
+    
+    #Return success message
+    return updated_user
 
 
