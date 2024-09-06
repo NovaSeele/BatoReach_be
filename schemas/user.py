@@ -1,6 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Union, List
-from fastapi import UploadFile
+from typing import Optional, List
 from schemas.project import ProjectInDB
 
 

@@ -153,12 +153,6 @@ async def change_user_password(user: UserChangePassword, current_user: UserInDB 
         {"$set": {"password": user.new_password, "hashed_password": new_password_hashed}}
     )
     
-    # Update the user's password in the database
-    await user_collection.update_one(
-        {"username": current_user.username}, 
-        {"$set": {"password": user.new_password, "hashed_password": new_password_hashed}}
-    )
-    
     # Fetch updated user details
     updated_user = await user_collection.find_one({"username": current_user.username})
     
