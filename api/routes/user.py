@@ -29,10 +29,11 @@ async def register_user(user: UserCreate):
             status_code=400, detail="Username already registered")
 
     hashed_password = get_password_hash(user.password)  # Use the password field
-    user_in_db = UserInDB(**user.model_dump(), hashed_password=hashed_password)    
+    user_dict = user.model_dump()
+    user_dict['hashed_password'] = hashed_password    
     
     # Insert the user into the database
-    result = await user_collection.insert_one(user_in_db.model_dump())
+    result = await user_collection.insert_one(user_dict)
 
     if result.inserted_id:
         return user
