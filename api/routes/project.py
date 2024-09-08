@@ -1,16 +1,16 @@
 # router.py
-import os
-import shutil
 
-from fastapi import APIRouter, Depends
 from datetime import datetime
 
-from schemas.user import UserInDB
-from schemas.project import ProjectCreate, ProjectInDB
-from models.user import get_current_user
+from fastapi import APIRouter, Depends
+
 from models.project import get_project_collection
+from models.user import get_current_user
+from schemas.project import ProjectCreate, ProjectInDB
+from schemas.user import UserInDB
 
 router = APIRouter()
+
 
 @router.get("/idk")
 async def read_root():
@@ -19,11 +19,11 @@ async def read_root():
 
 @router.post("/projects", response_model=ProjectInDB)
 async def create_project(
-    project: ProjectCreate,
-    current_user: UserInDB = Depends(get_current_user),
+        project: ProjectCreate,
+        current_user: UserInDB = Depends(get_current_user),
 ):
     project_collection = await get_project_collection()
-    
+
     # Prepare the new project document
     new_project = {
         "title": project.title,

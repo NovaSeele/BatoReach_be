@@ -1,19 +1,12 @@
-
-import motor.motor_asyncio
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
 from typing import Optional
 
+from fastapi import Depends, HTTPException, status
+from jose import JWTError, jwt
+
+from core.config import SECRET_KEY, ALGORITHM
 from db.session import get_collection
-
-from schemas.user import UserInDB, TokenData
-
-from core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-
 from dependency.user import verify_password, oauth2_scheme
+from schemas.user import UserInDB, TokenData
 
 
 async def get_user_collection():

@@ -2,10 +2,10 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from database import get_monogodb_client
 
-
 client = get_monogodb_client()
 
 db = client.BatoReach
+
 
 def get_collection(collection_name):
     collection = db[collection_name]
