@@ -8,7 +8,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 class Settings(BaseSettings):
-    API_HOST: str = "localhost"
+    API_HOST: str = "0.0.0.0"
     API_PORT: int = 8888
     # DB_URL: str
     # DB_PASSWORD: str
