@@ -41,3 +41,7 @@ class UserInDB(User):
 class UserChangePassword(BaseModel):
     old_password: str
     new_password: str
+
+
+class UserAddYoutubeChannel(BaseModel):
+    youtube_channel_id: str

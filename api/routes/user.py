@@ -9,7 +9,7 @@ from dependency.user import get_password_hash, create_access_token
 from models.project import get_project_collection
 from models.user import authenticate_user, get_current_user, get_user_collection
 from schemas.project import ProjectInDB
-from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, UserChangePassword
+from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, UserChangePassword, UserAddYoutubeChannel
 
 router = APIRouter()
 
@@ -62,6 +62,15 @@ async def upload_avatar(avatar: UploadFile = File(...), current_user: UserInDB =
     # Fetch updated user details
     updated_user = await user_collection.find_one({"username": current_user.username})
 
+    return updated_user
+
+@router.post("/set_channel_id", response_model=UserAddYoutubeChannel)
+async def set_youtube_channel_id(youtube_channel_id: UserAddYoutubeChannel, current_user: UserInDB = Depends(get_current_user)):
+    user_collection = await get_user_collection()
+    await user_collection.update_one(
+        {"username": current_user.username}, {"$set": {"youtube_channel_id": youtube_channel_id.youtube_channel_id}}
+    )
+    updated_user = await user_collection.find_one({"username": current_user.username})
     return updated_user
 
 
