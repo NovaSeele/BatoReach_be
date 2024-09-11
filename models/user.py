@@ -14,16 +14,17 @@ async def get_user_collection():
     return user_collection
 
 
-async def get_user_by_username(username: str) -> Optional[UserInDB]:
+async def get_user_by_username_or_email(identifier: str) -> Optional[UserInDB]:
     user_collection = await get_user_collection()
-    user_data = await user_collection.find_one({"username": username})
+    user_data = await user_collection.find_one(
+        {"$or": [{"username": identifier}, {"email": identifier}]}
+    )
     if user_data:
         return UserInDB(**user_data)
     return None
 
-
-async def authenticate_user(username: str, password: str) -> Optional[UserInDB]:
-    user = await get_user_by_username(username)
+async def authenticate_user(identifier: str, password: str) -> Optional[UserInDB]:
+    user = await get_user_by_username_or_email(identifier)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
@@ -45,7 +46,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = await get_user_by_username(username=token_data.username)
+    user = await get_user_by_username_or_email(token_data.username)
     if user is None:
         raise credentials_exception
     return user
