@@ -5,6 +5,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+
 from dependency.user import get_password_hash, create_access_token
 from models.project import get_project_collection
 from models.user import authenticate_user, get_current_user, get_user_collection
@@ -13,31 +17,36 @@ from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, Us
 
 router = APIRouter()
 
+# Configuration       
+cloudinary.config( 
+    cloud_name = "dxovnpypb", 
+    api_key = "163478744136852", 
+    api_secret = "sjuU6l-A4wTGCHxwcYZ5HecB0xg", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
+
+
 UPLOAD_DIR = "public/avatars/"
 
-
-# Register a new user
-@router.post("/register", response_model=UserCreate)
-async def register_user(user: UserCreate):
+@router.post("/upload-avatar", response_model=UserUpdateAvatar)
+async def upload_avatar(avatar: UploadFile = File(...), current_user: UserInDB = Depends(get_current_user)):
     user_collection = await get_user_collection()
 
-    # Check if the user already existed by username or email
-    existing_user = await user_collection.find_one(
-        {"$or": [{"username": user.username}, {"email": user.email}]})
-    if existing_user:
-        raise HTTPException(
-            status_code=400, detail="Username already registered")
+    # Upload the avatar file to Cloudinary
+    upload_result = cloudinary.uploader.upload(avatar.file, public_id=f"{current_user.username}_avatar")
 
-    hashed_password = get_password_hash(user.password)  # Use the password field
-    user_dict = user.model_dump()
-    user_dict['hashed_password'] = hashed_password
+    # Get the URL of the uploaded avatar
+    avatar_url = upload_result.get("secure_url")
 
-    # Insert the user into the database
-    result = await user_collection.insert_one(user_dict)
+    # Update user's avatar URL in the database
+    await user_collection.update_one(
+        {"username": current_user.username}, {"$set": {"avatar": avatar_url}}
+    )
 
-    if result.inserted_id:
-        return user
-    raise HTTPException(status_code=400, detail="Registration failed")
+    # Fetch updated user details
+    updated_user = await user_collection.find_one({"username": current_user.username})
+
+    return updated_user
 
 
 # Upload an avatar for the current user ( can also use this route to update the avatar)
