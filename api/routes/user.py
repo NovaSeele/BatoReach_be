@@ -25,7 +25,6 @@ cloudinary.config(
     secure=True
 )
 
-
 UPLOAD_DIR = "public/avatars/"
 
 @router.post("/upload-avatar", response_model=UserUpdateAvatar)
@@ -49,30 +48,30 @@ async def upload_avatar(avatar: UploadFile = File(...), current_user: UserInDB =
     return updated_user
 
 
-# Upload an avatar for the current user ( can also use this route to update the avatar)
-@router.post("/upload-avatar", response_model=UserUpdateAvatar)
-async def upload_avatar(avatar: UploadFile = File(...), current_user: UserInDB = Depends(get_current_user)):
+# Register a new user
+@router.post("/register", response_model=UserCreate)
+async def register_user(user: UserCreate):
+    
     user_collection = await get_user_collection()
-
-    # Ensure the uploads directory exists
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR)
-
-    # Save the avatar file
-    avatar_filename = f"{current_user.username}_avatar.jpg"
-    avatar_path = os.path.join(UPLOAD_DIR, avatar_filename)
-    with open(avatar_path, "wb") as f:
-        shutil.copyfileobj(avatar.file, f)
-
-    # Update user's avatar in the database
-    await user_collection.update_one(
-        {"username": current_user.username}, {"$set": {"avatar": avatar_path}}
-    )
-
-    # Fetch updated user details
-    updated_user = await user_collection.find_one({"username": current_user.username})
-
-    return updated_user
+    
+    # Check if the user already existed by username or email
+    existing_user = await user_collection.find_one(
+        {"$or": [{"username": user.username}, {"email": user.email}]})
+    if existing_user:
+        raise HTTPException(
+            status_code=400, detail="Username already registered")
+        
+    hashed_password = get_password_hash(user.password)  # Use the password field
+    user_dict = user.model_dump()
+    user_dict['hashed_password'] = hashed_password
+    
+    # Insert the user into the database
+    result = await user_collection.insert_one(user_dict)
+    
+    if result.inserted_id:
+        return user
+    raise HTTPException(status_code=400, detail="Registration failed")
+    
 
 @router.post("/set_channel_id", response_model=UserAddYoutubeChannel)
 async def set_youtube_channel_id(youtube_channel_id: UserAddYoutubeChannel, current_user: UserInDB = Depends(get_current_user)):
