@@ -36,7 +36,9 @@ class UserInDB(User):
     avatar: Optional[str] = None
     number_of_projects: Optional[int] = int
     projects: Optional[List[ProjectInDB]] = []
-    
+    youtube_channel_id: Optional[str] = None
+    youtube_channel_name: Optional[str] = None
+
 
 class UserChangePassword(BaseModel):
     old_password: str
@@ -45,3 +47,8 @@ class UserChangePassword(BaseModel):
 
 class UserAddYoutubeChannel(BaseModel):
     youtube_channel_id: str
+    
+    
+class UserYoutubeChannelInfo(BaseModel):
+    youtube_channel_id: str
+    youtube_channel_name: str

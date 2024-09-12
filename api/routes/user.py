@@ -7,11 +7,13 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.utils
 
+import httpx
+
 from dependency.user import get_password_hash, create_access_token
 from models.project import get_project_collection
 from models.user import authenticate_user, get_current_user, get_user_collection
 from schemas.project import ProjectInDB
-from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, UserChangePassword, UserAddYoutubeChannel
+from schemas.user import User, UserInDB, Token, UserCreate, UserUpdateAvatar, UserChangePassword, UserAddYoutubeChannel, UserYoutubeChannelInfo
 
 router = APIRouter()
 
@@ -22,6 +24,8 @@ cloudinary.config(
     api_secret = "sjuU6l-A4wTGCHxwcYZ5HecB0xg", # Click 'View API Keys' above to copy your API secret
     secure=True
 )
+
+YOUTUBE_API_KEY = "AIzaSyBFpSqujRWHa3z2nu73mwMFqCL01ib3KSI" 
 
 UPLOAD_DIR = "public/avatars/"
 
@@ -70,16 +74,6 @@ async def register_user(user: UserCreate):
         return user
     raise HTTPException(status_code=400, detail="Registration failed")
     
-
-@router.post("/set_channel_id", response_model=UserAddYoutubeChannel)
-async def set_youtube_channel_id(youtube_channel_id: UserAddYoutubeChannel, current_user: UserInDB = Depends(get_current_user)):
-    user_collection = await get_user_collection()
-    await user_collection.update_one(
-        {"username": current_user.username}, {"$set": {"youtube_channel_id": youtube_channel_id.youtube_channel_id}}
-    )
-    updated_user = await user_collection.find_one({"username": current_user.username})
-    return updated_user
-
 
 # Login and get an access token
 @router.post("/token", response_model=Token)
@@ -178,3 +172,100 @@ async def change_user_password(user: UserChangePassword, current_user: UserInDB 
 
     # Return success message
     return updated_user
+
+
+# @router.post("/set_channel_id", response_model=UserAddYoutubeChannel)
+# async def set_youtube_channel_id(youtube_channel_id: UserAddYoutubeChannel, current_user: UserInDB = Depends(get_current_user)):
+#     user_collection = await get_user_collection()
+#     await user_collection.update_one(
+#         {"username": current_user.username}, {"$set": {"youtube_channel_id": youtube_channel_id.youtube_channel_id}}
+#     )
+#     updated_user = await user_collection.find_one({"username": current_user.username})
+#     return updated_user
+
+
+# @router.get("/channel-name/", response_model=UserYoutubeChannelInfo)
+# async def get_channel_name(
+#     current_user: UserInDB = Depends(get_current_user)
+# ):
+#     youtube_channel_id = current_user.youtube_channel_id
+    
+#     if not youtube_channel_id:
+#         raise HTTPException(status_code=400, detail="User does not have a YouTube channel ID")
+
+#     youtube_url = (
+#         f"https://www.googleapis.com/youtube/v3/channels"
+#         f"?part=snippet&id={youtube_channel_id}&key={YOUTUBE_API_KEY}"
+#     )
+
+#     try:
+#         async with httpx.AsyncClient() as client:
+#             response = await client.get(youtube_url)
+#             response.raise_for_status()  # Raise an error for bad responses
+
+#         data = response.json()
+#         if "items" not in data or len(data["items"]) == 0:
+#             raise HTTPException(status_code=404, detail="Channel not found")
+
+#         # Extracting channel name from response data
+#         channel_name = data["items"][0]["snippet"]["title"]
+        
+#         return UserYoutubeChannelInfo(
+#             youtube_channel_id=youtube_channel_id,
+#             youtube_channel_name=channel_name
+#         )
+
+#     except httpx.HTTPStatusError as e:
+#         raise HTTPException(status_code=e.response.status_code, detail="Error fetching channel data")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/set_channel_id", response_model=UserYoutubeChannelInfo)
+async def set_youtube_channel_id(
+    youtube_channel_id: UserAddYoutubeChannel,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    user_collection = await get_user_collection()
+
+    # Fetch YouTube channel info
+    youtube_url = (
+        f"https://www.googleapis.com/youtube/v3/channels"
+        f"?part=snippet&id={youtube_channel_id.youtube_channel_id}&key={YOUTUBE_API_KEY}"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(youtube_url)
+            response.raise_for_status()  # Raise an error for bad responses
+
+        data = response.json()
+        if "items" not in data or len(data["items"]) == 0:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        # Extracting channel name from response data
+        channel_name = data["items"][0]["snippet"]["title"]
+
+        # Update the user document with the new channel ID and name
+        await user_collection.update_one(
+            {"username": current_user.username},
+            {
+                "$set": {
+                    "youtube_channel_id": youtube_channel_id.youtube_channel_id,
+                    "youtube_channel_name": channel_name
+                }
+            }
+        )
+
+        # Fetch the updated user data
+        updated_user = await user_collection.find_one({"username": current_user.username})
+
+        return UserYoutubeChannelInfo(
+            youtube_channel_id=updated_user["youtube_channel_id"],
+            youtube_channel_name=updated_user["youtube_channel_name"]
+        )
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail="Error fetching channel data")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
