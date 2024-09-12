@@ -1,5 +1,3 @@
-import os
-import shutil
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
@@ -7,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 import cloudinary
 import cloudinary.uploader
-from cloudinary.utils import cloudinary_url
+import cloudinary.utils
 
 from dependency.user import get_password_hash, create_access_token
 from models.project import get_project_collection
