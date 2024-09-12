@@ -17,6 +17,8 @@ class User(BaseModel):
     email: str
     full_name: Optional[str] = None
     avatar: Optional[str] = None
+    youtube_channel_id: Optional[str] = None
+    youtube_channel_name: Optional[str] = None
 
 
 class UserUpdateAvatar(User):
