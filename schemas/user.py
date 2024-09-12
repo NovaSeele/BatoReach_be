@@ -49,8 +49,10 @@ class UserChangePassword(BaseModel):
 
 class UserAddYoutubeChannel(BaseModel):
     youtube_channel_id: str
+    play_list_id: Optional[str] = None
     
     
 class UserYoutubeChannelInfo(BaseModel):
     youtube_channel_id: str
     youtube_channel_name: str
+    play_list_id: Optional[str] = None

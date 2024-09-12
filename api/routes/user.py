@@ -9,7 +9,7 @@ import cloudinary.utils
 
 import httpx
 
-from dependency.user import get_password_hash, create_access_token
+from dependency.user import get_password_hash, create_access_token, verify_password
 from models.project import get_project_collection
 from models.user import authenticate_user, get_current_user, get_user_collection
 from schemas.project import ProjectInDB
@@ -114,7 +114,7 @@ async def get_user_project_count(current_user: UserInDB = Depends(get_current_us
 
 
 # Update the user's project information using small route before
-@router.put("/user/update_project", response_model=UserInDB)
+@router.get("/user/update_project", response_model=UserInDB)
 async def update_user_project_info(current_user: UserInDB = Depends(get_current_user)):
     # get collection
     project_collection = await get_project_collection()
@@ -144,8 +144,11 @@ async def update_user_project_info(current_user: UserInDB = Depends(get_current_
 
 
 # Change the user's password
-@router.put("/user/change_password", response_model=UserInDB)
-async def change_user_password(user: UserChangePassword, current_user: UserInDB = Depends(get_current_user)):
+@router.put("/change-password", response_model=UserInDB)
+async def change_password(
+    user: UserChangePassword,
+    current_user: UserInDB = Depends(get_current_user)
+):
     user_collection = await get_user_collection()
 
     # If new password is the same as the old password
@@ -158,71 +161,26 @@ async def change_user_password(user: UserChangePassword, current_user: UserInDB 
         raise HTTPException(
             status_code=400, detail="Old password is incorrect")
 
-    # Hash the new password
-    new_password_hashed = get_password_hash(user.new_password)
+    # Generate new hashed password
+    new_hashed_password = get_password_hash(user.new_password)
 
-    # Update both new password and hashed password
+    # Cập nhật mật khẩu trong cơ sở dữ liệu
     await user_collection.update_one(
         {"username": current_user.username},
-        {"$set": {"password": user.new_password, "hashed_password": new_password_hashed}}
+        {"$set": {
+            "hashed_password": new_hashed_password,
+            "password": user.new_password
+        }}
     )
 
-    # Fetch updated user details
+    # Fetch updated user information
     updated_user = await user_collection.find_one({"username": current_user.username})
 
-    # Return success message
     return updated_user
 
 
-# @router.post("/set_channel_id", response_model=UserAddYoutubeChannel)
-# async def set_youtube_channel_id(youtube_channel_id: UserAddYoutubeChannel, current_user: UserInDB = Depends(get_current_user)):
-#     user_collection = await get_user_collection()
-#     await user_collection.update_one(
-#         {"username": current_user.username}, {"$set": {"youtube_channel_id": youtube_channel_id.youtube_channel_id}}
-#     )
-#     updated_user = await user_collection.find_one({"username": current_user.username})
-#     return updated_user
-
-
-# @router.get("/channel-name/", response_model=UserYoutubeChannelInfo)
-# async def get_channel_name(
-#     current_user: UserInDB = Depends(get_current_user)
-# ):
-#     youtube_channel_id = current_user.youtube_channel_id
-    
-#     if not youtube_channel_id:
-#         raise HTTPException(status_code=400, detail="User does not have a YouTube channel ID")
-
-#     youtube_url = (
-#         f"https://www.googleapis.com/youtube/v3/channels"
-#         f"?part=snippet&id={youtube_channel_id}&key={YOUTUBE_API_KEY}"
-#     )
-
-#     try:
-#         async with httpx.AsyncClient() as client:
-#             response = await client.get(youtube_url)
-#             response.raise_for_status()  # Raise an error for bad responses
-
-#         data = response.json()
-#         if "items" not in data or len(data["items"]) == 0:
-#             raise HTTPException(status_code=404, detail="Channel not found")
-
-#         # Extracting channel name from response data
-#         channel_name = data["items"][0]["snippet"]["title"]
-        
-#         return UserYoutubeChannelInfo(
-#             youtube_channel_id=youtube_channel_id,
-#             youtube_channel_name=channel_name
-#         )
-
-#     except httpx.HTTPStatusError as e:
-#         raise HTTPException(status_code=e.response.status_code, detail="Error fetching channel data")
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.post("/set_channel_id", response_model=UserYoutubeChannelInfo)
-async def set_youtube_channel_id(
+@router.post("/set_youtube_id", response_model=UserYoutubeChannelInfo)
+async def set_youtube_id(
     youtube_channel_id: UserAddYoutubeChannel,
     current_user: UserInDB = Depends(get_current_user)
 ):
@@ -246,15 +204,17 @@ async def set_youtube_channel_id(
         # Extracting channel name from response data
         channel_name = data["items"][0]["snippet"]["title"]
 
-        # Update the user document with the new channel ID and name
+        # Update the user document with the new channel ID, name, and playlist ID
+        update_data = {
+            "youtube_channel_id": youtube_channel_id.youtube_channel_id,
+            "youtube_channel_name": channel_name
+        }
+        if youtube_channel_id.play_list_id:
+            update_data["youtube_playlist_id"] = youtube_channel_id.play_list_id
+
         await user_collection.update_one(
             {"username": current_user.username},
-            {
-                "$set": {
-                    "youtube_channel_id": youtube_channel_id.youtube_channel_id,
-                    "youtube_channel_name": channel_name
-                }
-            }
+            {"$set": update_data}
         )
 
         # Fetch the updated user data
@@ -269,3 +229,6 @@ async def set_youtube_channel_id(
         raise HTTPException(status_code=e.response.status_code, detail="Error fetching channel data")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
