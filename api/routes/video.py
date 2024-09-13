@@ -26,14 +26,16 @@ async def create_youtube_video(
     current_user: UserInDB = Depends(get_current_user)
 ):
     video_collection = await get_video_collection()
-    existing_video = await video_collection.find_one({"video_id": video.video_id})
+    # existing_video = await video_collection.find_one({"video_id": video.video_id})
 
-    if existing_video:
-        raise HTTPException(status_code=400, detail="Video with this ID or URL already exists")
+    # if existing_video:
+    #     raise HTTPException(status_code=400, detail="Video with this ID or URL already exists")
 
     db_video = VideoInDB(
         video_owner=current_user.username,
         video_id=video.video_id,
+        video_title=video.video_title,
+        video_voice=video.video_voice,
         video_language=video.video_language,
         video_type=video.video_type,
         video_url=video.video_url
@@ -44,32 +46,32 @@ async def create_youtube_video(
     else:
         raise HTTPException(status_code=500, detail="Failed to create YouTube video")
 
-@router.post("/videos/add-language", response_model=VideoInDB)
-async def add_language_to_video(
-    video_id: str,
-    video_url: str,
-    new_language: Languages,
-    current_user: UserInDB = Depends(get_current_user)
-):
-    video_collection = await get_video_collection()
-    existing_video = await video_collection.find_one({"$or": [{"video_id": video_id}, {"video_url": video_url}]})
+# @router.post("/videos/add-language", response_model=VideoInDB)
+# async def add_language_to_video(
+#     video_id: str,
+#     video_url: str,
+#     new_language: Languages,
+#     current_user: UserInDB = Depends(get_current_user)
+# ):
+#     video_collection = await get_video_collection()
+#     existing_video = await video_collection.find_one({"$or": [{"video_id": video_id}, {"video_url": video_url}]})
 
-    if not existing_video:
-        raise HTTPException(status_code=404, detail="Video not found")
+#     if not existing_video:
+#         raise HTTPException(status_code=404, detail="Video not found")
 
-    existing_languages = set(lang["language"] for lang in existing_video["video_language"])
-    if new_language.language in existing_languages:
-        raise HTTPException(status_code=400, detail="Language already exists for this video")
+#     existing_languages = set(lang["language"] for lang in existing_video["video_language"])
+#     if new_language.language in existing_languages:
+#         raise HTTPException(status_code=400, detail="Language already exists for this video")
 
-    update_result = await video_collection.update_one(
-        {"_id": existing_video["_id"]},
-        {"$push": {"video_language": new_language.model_dump()}}
-    )
-    if update_result.modified_count:
-        updated_video = await video_collection.find_one({"_id": existing_video["_id"]})
-        return VideoInDB(**updated_video)
-    else:
-        raise HTTPException(status_code=500, detail="Failed to add new language to video")
+#     update_result = await video_collection.update_one(
+#         {"_id": existing_video["_id"]},
+#         {"$push": {"video_language": new_language.model_dump()}}
+#     )
+#     if update_result.modified_count:
+#         updated_video = await video_collection.find_one({"_id": existing_video["_id"]})
+#         return VideoInDB(**updated_video)
+#     else:
+#         raise HTTPException(status_code=500, detail="Failed to add new language to video")
 
 
 @router.post("/videos/not-youtube", response_model=VideoInDB)
@@ -78,14 +80,16 @@ async def create_non_youtube_video(
     current_user: UserInDB = Depends(get_current_user)
 ):
     video_collection = await get_video_collection()
-    existing_video = await video_collection.find_one({"video_id": video.video_id})
+    # existing_video = await video_collection.find_one({"video_id": video.video_id})
 
-    if existing_video:
-        raise HTTPException(status_code=400, detail="Video with this ID or URL already exists")
+    # if existing_video:
+    # raise HTTPException(status_code=400, detail="Video with this ID or URL already exists")
 
     db_video = VideoInDB(
         video_owner=current_user.username,
         video_id=video.video_id,
+        video_title=video.video_title,
+        video_voice=video.video_voice,
         video_language=video.video_language,
         video_type=video.video_type,
         video_url=video.video_url
