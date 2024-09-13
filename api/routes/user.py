@@ -187,30 +187,44 @@ async def set_youtube_id(
     user_collection = await get_user_collection()
 
     # Fetch YouTube channel info
-    youtube_url = (
+    channel_url = (
         f"https://www.googleapis.com/youtube/v3/channels"
-        f"?part=snippet&id={youtube_channel_id.youtube_channel_id}&key={YOUTUBE_API_KEY}"
+        f"?part=snippet,contentDetails&id={youtube_channel_id.youtube_channel_id}&key={YOUTUBE_API_KEY}"
     )
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(youtube_url)
-            response.raise_for_status()  # Raise an error for bad responses
+            response = await client.get(channel_url)
+            response.raise_for_status()
 
         data = response.json()
         if "items" not in data or len(data["items"]) == 0:
             raise HTTPException(status_code=404, detail="Channel not found")
 
-        # Extracting channel name from response data
-        channel_name = data["items"][0]["snippet"]["title"]
+        channel_item = data["items"][0]
+        channel_name = channel_item["snippet"]["title"]
+        uploads_playlist_id = channel_item["contentDetails"]["relatedPlaylists"]["uploads"]
 
-        # Update the user document with the new channel ID, name, and playlist ID
+        # Fetch playlists
+        playlists_url = (
+            f"https://www.googleapis.com/youtube/v3/playlists"
+            f"?part=snippet&channelId={youtube_channel_id.youtube_channel_id}&key={YOUTUBE_API_KEY}"
+        )
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(playlists_url)
+            response.raise_for_status()
+
+        playlists_data = response.json()
+        playlist_ids = [item["id"] for item in playlists_data.get("items", [])]
+        playlist_ids.append(uploads_playlist_id)  # Add uploads playlist ID
+
+        # Update the user document with the new channel ID, name, and playlist IDs
         update_data = {
             "youtube_channel_id": youtube_channel_id.youtube_channel_id,
-            "youtube_channel_name": channel_name
+            "youtube_channel_name": channel_name,
+            "youtube_playlist_ids": playlist_ids
         }
-        if youtube_channel_id.play_list_id:
-            update_data["youtube_playlist_id"] = youtube_channel_id.play_list_id
 
         await user_collection.update_one(
             {"username": current_user.username},
@@ -222,13 +236,14 @@ async def set_youtube_id(
 
         return UserYoutubeChannelInfo(
             youtube_channel_id=updated_user["youtube_channel_id"],
-            youtube_channel_name=updated_user["youtube_channel_name"]
+            youtube_channel_name=updated_user["youtube_channel_name"],
+            play_list_id=updated_user["youtube_playlist_ids"]
         )
 
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Error fetching channel data")
+        raise HTTPException(status_code=e.response.status_code, detail="Error fetching YouTube data")
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 
