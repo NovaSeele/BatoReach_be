@@ -223,7 +223,7 @@ async def set_youtube_id(
         update_data = {
             "youtube_channel_id": youtube_channel_id.youtube_channel_id,
             "youtube_channel_name": channel_name,
-            "youtube_playlist_ids": playlist_ids
+            "play_list_id": playlist_ids
         }
 
         await user_collection.update_one(
@@ -237,7 +237,7 @@ async def set_youtube_id(
         return UserYoutubeChannelInfo(
             youtube_channel_id=updated_user["youtube_channel_id"],
             youtube_channel_name=updated_user["youtube_channel_name"],
-            play_list_id=updated_user["youtube_playlist_ids"]
+            play_list_id=updated_user["play_list_id"]
         )
 
     except httpx.HTTPStatusError as e:
