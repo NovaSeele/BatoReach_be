@@ -30,6 +30,7 @@ async def create_audio(audio: Audio):
         video_type=audio.video_type,
         video_id=audio.video_id,
         music_name=audio.music_name,
+        shorts_duration=audio.shorts_duration,
     )
 
     result = await audio_collection.insert_one(db_audio.model_dump())
@@ -39,12 +40,13 @@ async def create_audio(audio: Audio):
         raise HTTPException(status_code=500, detail="Failed to create audio")
 
 
-@router.get("/test", response_model=str)
+@router.get("/test/audio", response_model=str)
 async def test_audio(
     url: str,
     video_type: str,
     video_id: str,
     music_name: str,
+    shorts_duration: int,
 ):
     return "test OK"
 

@@ -81,7 +81,7 @@ async def get_videos(video_id: str):
 
 
 # actually this is a test for the video translation, return should be a video url after translation
-@router.get("/test", response_model=str)
+@router.get("/test/video", response_model=str)
 async def test_video(
     url: str,
     language: str,
