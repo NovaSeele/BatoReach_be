@@ -41,6 +41,26 @@ async def create_video(
         return db_video
     else:
         raise HTTPException(status_code=500, detail="Failed to create YouTube video")
+
+@router.post("/videos_no_auth/", response_model=VideoInDB)
+async def create_video_no_auth(video: Video):
+    video_collection = await get_video_collection()
+
+    db_video = VideoInDB(
+        video_owner="guest",
+        video_id=video.video_id,
+        video_title=video.video_title,
+        video_voice=video.video_voice,
+        video_language=video.video_language,
+        video_type=video.video_type,
+        video_url=video.video_url
+    )
+    result = await video_collection.insert_one(db_video.model_dump())
+    if result.inserted_id:
+        return db_video
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create video")
+    
     
 # Return all videos that have the same video_id
 @router.get("/videos/{video_id}", response_model=List[VideoInDB])
