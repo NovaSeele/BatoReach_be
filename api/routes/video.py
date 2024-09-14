@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 
 import cloudinary
@@ -41,92 +41,42 @@ async def create_video(
         return db_video
     else:
         raise HTTPException(status_code=500, detail="Failed to create YouTube video")
-  
-  
-  # @router.get("/videos/test")
-# async def get_video_info(
-#     url: str = Query(..., description="YouTube video URL"),
-#     language: str = Query(..., description="Target language"),
-#     video_type: str = Query(..., description="Type of video"),
-#     use_captions: bool = Query(..., description="Whether to use captions"),
-#     voice: str = Query(..., description="Voice to use"),
-#     video_id: Optional[str] = Query(None, description="YouTube video ID")
-# ):
-#     # Validate the YouTube URL
-#     if "youtube.com/watch?v=" not in url and "youtu.be/" not in url:
-#         raise HTTPException(status_code=400, detail="Invalid YouTube URL")
-
-#     # Extract video ID if not provided
-#     if not video_id:
-#         video_id = url.split("v=")[-1] if "v=" in url else url.split("/")[-1]
-
-#     # Here you would typically process the video, translate it, etc.
-#     # For this example, we'll just return the received parameters
     
-#     # Simulating an async operation (e.g., calling an external API)
-#     async with httpx.AsyncClient() as client:
-#         # Replace this with your actual video processing logic
-#         # This is just a placeholder to demonstrate async operation
-#         response = await client.get(f"https://www.youtube.com/oembed?url={url}&format=json")
-#         if response.status_code == 200:
-#             video_info = response.json()
-#         else:
-#             raise HTTPException(status_code=response.status_code, detail="Failed to fetch video info")
+# Return all videos that have the same video_id
+@router.get("/videos/{video_id}", response_model=List[VideoInDB])
+async def get_videos(video_id: str):
+    video_collection = await get_video_collection()
+    videos = await video_collection.find({"video_id": video_id}).to_list(None)
+    if not videos:
+        raise HTTPException(status_code=404, detail="No videos found with this ID")
+    return videos
 
-#     result = 'https://videos.pexels.com/video-files/6548176/6548176-hd_1920_1080_24fps.mp4'
-#     return result
-
-
-# @router.post("/videos/add-language", response_model=VideoInDB)
-# async def add_language_to_video(
-#     video_id: str,
-#     video_url: str,
-#     new_language: Languages,
-#     current_user: UserInDB = Depends(get_current_user)
-# ):
+# # Return all languages that have the same video_id
+# @router.get("/videos/{video_id}/languages", response_model=List[str])
+# async def get_video_languages(video_id: str):
 #     video_collection = await get_video_collection()
-#     existing_video = await video_collection.find_one({"$or": [{"video_id": video_id}, {"video_url": video_url}]})
-
-#     if not existing_video:
-#         raise HTTPException(status_code=404, detail="Video not found")
-
-#     existing_languages = set(lang["language"] for lang in existing_video["video_language"])
-#     if new_language.language in existing_languages:
-#         raise HTTPException(status_code=400, detail="Language already exists for this video")
-
-#     update_result = await video_collection.update_one(
-#         {"_id": existing_video["_id"]},
-#         {"$push": {"video_language": new_language.model_dump()}}
-#     )
-#     if update_result.modified_count:
-#         updated_video = await video_collection.find_one({"_id": existing_video["_id"]})
-#         return VideoInDB(**updated_video)
-#     else:
-#         raise HTTPException(status_code=500, detail="Failed to add new language to video")
+#     videos = await video_collection.find({"video_id": video_id}).to_list(None)
+    
+#     if not videos:
+#         raise HTTPException(status_code=404, detail="No videos found with this ID")
+    
+#     languages = list(set(video["video_language"] for video in videos))
+#     return languages
 
 
-# @router.post("/videos/not-youtube", response_model=VideoInDB)
-# async def create_non_youtube_video(
-#     video: VideoInYoutube,
-#     current_user: UserInDB = Depends(get_current_user)
-# ):
-#     video_collection = await get_video_collection()
-#     # existing_video = await video_collection.find_one({"video_id": video.video_id})
+# actually this is a test for the video translation, return should be a video url after translation
+@router.get("/test", response_model=str)
+async def test_video_translation(
+    url: str,
+    language: str,
+    video_type: str,
+    use_captions: str,
+    voice_name: str,
+    video_id: str
+):
+    return "https://www.tiktok.com/@mini_anti_official/video/7277552414465527041"
 
-#     # if existing_video:
-#     # raise HTTPException(status_code=400, detail="Video with this ID or URL already exists")
 
-#     db_video = VideoInDB(
-#         video_owner=current_user.username,
-#         video_id=video.video_id,
-#         video_title=video.video_title,
-#         video_voice=video.video_voice,
-#         video_language=video.video_language,
-#         video_type=video.video_type,
-#         video_url=video.video_url
-#     )
-#     result = await video_collection.insert_one(db_video.model_dump())
-#     if result.inserted_id:
-#         return db_video
-#     else:
-#         raise HTTPException(status_code=500, detail="Failed to create YouTube video")
+
+
+
