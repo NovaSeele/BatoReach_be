@@ -16,7 +16,7 @@ class Video(BaseModel):
 
 
 class VideoInDB(BaseModel):
-    video_owner: str
+    video_owner: Optional[str] = None
     video_id: str
     video_title: Optional[str] = None
     video_language: Optional[str] = None
