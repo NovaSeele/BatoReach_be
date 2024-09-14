@@ -21,9 +21,7 @@ router = APIRouter()
 
 
 @router.post("/videos/", response_model=VideoInDB)
-async def create_video(
-    video: Video,
-):
+async def create_video(video: Video):
     video_collection = await get_video_collection()
 
     db_video = VideoInDB(
@@ -84,7 +82,7 @@ async def get_videos(video_id: str):
 
 # actually this is a test for the video translation, return should be a video url after translation
 @router.get("/test", response_model=str)
-async def test_video_translation(
+async def test_video(
     url: str,
     language: str,
     video_type: str,
@@ -92,7 +90,7 @@ async def test_video_translation(
     voice_name: str,
     video_id: str
 ):
-    return "https://www.tiktok.com/@mini_anti_official/video/7277552414465527041"
+    return "test OK"
 
 
 
