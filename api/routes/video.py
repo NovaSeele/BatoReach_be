@@ -58,6 +58,16 @@ async def get_videos(video_id: str):
         raise HTTPException(status_code=404, detail="No videos found with this ID")
     return videos
 
+# Return all videos info when passed in list of video_id
+@router.get("/videos/list/", response_model=List[VideoInDB])
+async def get_videos_list(video_ids: List[str] = Query(...)):
+    # print("Received video_ids:", video_ids)  # Debugging line
+    video_collection = await get_video_collection()
+    videos = await video_collection.find({"video_id": {"$in": video_ids}}).to_list(None)
+    if not videos:
+        raise HTTPException(status_code=404, detail="No videos found with these IDs")
+    return videos
+
 
 # actually this is a test for the video translation, return should be a video url after translation
 @router.get("/test/video", response_model=str)
