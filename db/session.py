@@ -4,7 +4,7 @@ from database import get_monogodb_client
 
 client = get_monogodb_client()
 
-db = client.BatoReach
+db = client['BatoReach']
 
 
 def get_collection(collection_name):
