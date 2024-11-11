@@ -1,5 +1,5 @@
 # BatoReach_be
- IAI Hackathon BE of BatoReach App
+BE of BatoReach App
 
 cách chạy BE
 
