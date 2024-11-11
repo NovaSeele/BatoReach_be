@@ -74,7 +74,7 @@ typing_extensions==4.12.2
 uvicorn
 watchfiles==0.22.0
 websockets==12.0
-python-jose==3.3.0
+python-jose==3.3.0 
 passlib
 cloudinary
 annotated-types==0.7.0
@@ -116,3 +116,4 @@ websockets==12.0
 python-jose==3.3.0
 passlib
 cloudinary
+bcrypt
