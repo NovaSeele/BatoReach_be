@@ -21,7 +21,7 @@ class User(BaseModel):
     youtube_channel_name: Optional[str] = None
     play_list_id: Optional[List[str]] = None
     video_ids: Optional[List[str]] = None
-    audio_ids: Optional[List[str]] = None
+    short_ids: Optional[List[str]] = None
 
 
 class UserUpdateAvatar(User):
@@ -45,7 +45,7 @@ class UserInDB(User):
     youtube_channel_name: Optional[str] = None
     play_list_id: Optional[List[str]] = None
     video_ids: Optional[List[str]] = None
-    audio_ids: Optional[List[str]] = None
+    short_ids: Optional[List[str]] = None
 
 
 class UserChangePassword(BaseModel):
