@@ -1,5 +1,5 @@
 from db.session import get_collection
 
-async def get_shorts_collection():
-    shorts_collection = get_collection('shorts')
-    return shorts_collection
+async def get_short_collection():
+    short_collection = get_collection('shorts')
+    return short_collection

@@ -61,7 +61,6 @@ async def get_videos(video_id: str):
 # Return all videos info when passed in list of video_id
 @router.get("/videos/list/", response_model=List[VideoInDB])
 async def get_videos_list(video_ids: List[str] = Query(...)):
-    # print("Received video_ids:", video_ids)  # Debugging line
     video_collection = await get_video_collection()
     videos = await video_collection.find({"video_id": {"$in": video_ids}}).to_list(None)
     if not videos:
