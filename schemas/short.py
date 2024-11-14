@@ -8,8 +8,8 @@ class Short(BaseModel):
     music_name: Optional[str] = None
     shorts_duration: Optional[int] = None
     language: Optional[str] = None
-    shorts_description: Optional[str] = None
-    shorts_title: Optional[str] = None
+    short_description: Optional[str] = None
+    short_title: Optional[str] = None
 
 class ShortInDB(BaseModel):
     url: Optional[str] = None
@@ -18,5 +18,5 @@ class ShortInDB(BaseModel):
     music_name: Optional[str] = None
     shorts_duration: Optional[int] = None
     language: Optional[str] = None
-    shorts_description: Optional[str] = None
-    shorts_title: Optional[str] = None
+    short_description: Optional[str] = None
+    short_title: Optional[str] = None

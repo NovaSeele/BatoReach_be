@@ -33,8 +33,8 @@ async def create_short(short: Short, username: Optional[str] = None):
         music_name=short.music_name,
         shorts_duration=short.shorts_duration,
         language=short.language,
-        shorts_description=short.shorts_description,
-        shorts_title=short.shorts_title
+        short_description=short.short_description,
+        short_title=short.short_title
     )
 
     if username:
@@ -68,6 +68,14 @@ async def get_shorts_list(short_ids: List[str] = Query(...)):
     if not shorts:
         raise HTTPException(status_code=404, detail="No shorts found with these IDs")
     return shorts
+
+@router.get("/shorts/info/", response_model=ShortInDB)
+async def get_short_info(url: str):
+    short_collection = await get_short_collection()
+    short = await short_collection.find_one({"url": url})
+    if not short:
+        raise HTTPException(status_code=404, detail="No short found with this URL")
+    return short
 
 
 @router.get("/test/short", response_model=str)
