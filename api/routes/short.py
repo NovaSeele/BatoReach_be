@@ -32,6 +32,9 @@ async def create_short(short: Short, username: Optional[str] = None):
         video_id=short.video_id,
         music_name=short.music_name,
         shorts_duration=short.shorts_duration,
+        language=short.language,
+        shorts_description=short.shorts_description,
+        shorts_title=short.shorts_title
     )
 
     if username:
